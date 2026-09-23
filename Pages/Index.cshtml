@@ -1,0 +1,229 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "BusCima";
+}
+@Html.AntiForgeryToken()
+
+<div class="phone">
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="bi bi-bus-front-fill"></i>
+                <span>BusCima</span>
+            </div>
+            <i class="bi bi-list menu-icon"></i>
+        </div>
+    </header>
+
+    <main>
+        <div class="content">
+
+            <!-- MAPA + BUSCADOR -->
+            <div id="zona-mapa">
+                <section class="mapa">
+                    <div id="map"></div>
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="¿A dónde quieres ir?">
+                    </div>
+                </section>
+            </div>
+
+            <!-- SECCION DE RUTAS -->
+            <section class="routes" id="zona-rutas">
+
+                <div class="routes-title">
+                    <div>
+                        <i class="bi bi-bus-front"></i>
+                        <strong id="titulo-rutas">Rutas disponibles</strong>
+                    </div>
+                </div>
+
+                <!-- NIVEL 1: LISTA DE COMPAÑIAS -->
+                <div id="lista-companias">
+
+                    <div class="route-card" data-company="vigia">
+                        <div>
+                            <strong>Compañía Vigía</strong>
+                            <small>2 rutas activas</small>
+                        </div>
+                        <a href="#">Ver rutas ›</a>
+                    </div>
+
+                    <div class="route-card" data-company="brisa">
+                        <div>
+                            <strong>Compañía Brisa</strong>
+                            <small>2 rutas activas</small>
+                        </div>
+                        <a href="#">Ver rutas ›</a>
+                    </div>
+
+                    <div class="route-card" data-company="rojo">
+                        <div>
+                            <strong>Compañía Rojo</strong>
+                            <small>2 rutas activas</small>
+                        </div>
+                        <a href="#">Ver rutas ›</a>
+                    </div>
+
+                    <div class="route-card" data-company="amarillo">
+                        <div>
+                            <strong>Compañía Amarillo</strong>
+                            <small>2 rutas activas</small>
+                        </div>
+                        <a href="#">Ver rutas ›</a>
+                    </div>
+
+                </div>
+
+                <!-- NIVEL 2: RUTAS DE CADA COMPAÑIA -->
+
+                <div id="detalle-vigia" class="detalle-compania" style="display:none;">
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Vigía 1">
+                            <strong>Vigía 1</strong>
+                            <small>Centro → UABC</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Vigía 1">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Vigía 2">
+                            <strong>Vigía 2</strong>
+                            <small>Centro → Playa</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Vigía 2">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                </div>
+
+                <div id="detalle-brisa" class="detalle-compania" style="display:none;">
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Brisa 1">
+                            <strong>Brisa 1</strong>
+                            <small>Centro → Mercado</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Brisa 1">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Brisa 2">
+                            <strong>Brisa 2</strong>
+                            <small>Centro → Hospital</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Brisa 2">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                </div>
+
+                <div id="detalle-rojo" class="detalle-compania" style="display:none;">
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Rojo 1">
+                            <strong>Rojo 1</strong>
+                            <small>Centro → Estadio</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Rojo 1">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Rojo 2">
+                            <strong>Rojo 2</strong>
+                            <small>Centro → Terminal</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Rojo 2">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                </div>
+
+                <div id="detalle-amarillo" class="detalle-compania" style="display:none;">
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Amarillo 1">
+                            <strong>Amarillo 1</strong>
+                            <small>Centro → UABC</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Amarillo 1">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                    <div class="route-card">
+                        <div class="ruta-clickeable" data-ruta="Amarillo 2">
+                            <strong>Amarillo 2</strong>
+                            <small>Centro → Preparatoria</small>
+                        </div>
+                        <button class="btn-comentarios" data-ruta="Amarillo 2">
+                            <i class="bi bi-chat-dots"></i> Comentarios
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- PANEL DE RESEÑAS -->
+            <section class="resenias" id="panel-resenias" style="display:none;">
+
+                <div class="resenias-header">
+                    <button id="btn-volver-rutas" class="btn-volver">‹ Volver</button>
+                    <strong id="ruta-actual-titulo"></strong>
+                </div>
+
+                <div class="resenias-promedio">
+                    <div class="promedio-numero" id="promedio-numero">0.0</div>
+                    <div class="promedio-estrellas" id="promedio-estrellas">☆☆☆☆☆</div>
+                    <div class="promedio-total" id="promedio-total">0 reseñas</div>
+                </div>
+
+                <button id="btn-nuevo-comentario" class="btn-nuevo-comentario">
+                    <i class="bi bi-chat-dots"></i> Dejar un comentario
+                </button>
+
+                <div id="form-comentario" class="form-comentario" style="display:none;">
+                    <label>Autor</label>
+                    <input type="text" id="input-usuario" placeholder="Anonimo" maxlength="50" />
+
+                    <label>Puntuación</label>
+                    <div class="estrellas-selector" id="estrellas-selector">
+                        <span data-val="1">★</span>
+                        <span data-val="2">★</span>
+                        <span data-val="3">★</span>
+                        <span data-val="4">★</span>
+                        <span data-val="5">★</span>
+                    </div>
+
+                    <label>Mensaje</label>
+                    <textarea id="input-mensaje" maxlength="200" placeholder="Escribe tu comentario..."></textarea>
+
+                    <div class="form-botones">
+                        <button id="btn-cancelar" class="btn-cancelar">Cancelar</button>
+                        <button id="btn-enviar" class="btn-enviar">Enviar</button>
+                    </div>
+
+                    <div id="form-error" class="form-error" style="display:none;"></div>
+                </div>
+
+                <div id="lista-resenias" class="lista-resenias"></div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active">
+            <i class="bi bi-house-fill"></i>
+            <span>Inicio</span>
+        </div>
+        <div class="nav-item">
+            <i class="bi bi-person-fill"></i>
+            <span>Perfil</span>
+        </div>
+    </nav>
+
+</div>

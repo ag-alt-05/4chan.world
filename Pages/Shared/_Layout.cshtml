@@ -1,0 +1,590 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BusCima</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
+</head>
+<body>
+
+    @RenderBody()
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // ============================================================
+        // MAPA
+        // ============================================================
+        var latMunicipio = 31.842948965890013;
+        var lngMunicipio = -116.60291558945153;
+        var zoomInicial = 13;
+
+        var map = L.map('map', {
+            center: [latMunicipio, lngMunicipio],
+            zoom: zoomInicial,
+            zoomControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        var capaTodasLasParadas = L.layerGroup().addTo(map);
+        var capaRutaActual = L.layerGroup().addTo(map);
+        var marcadorUsuario = null;
+        var uLat = null, uLng = null;
+        var rutaActual = null;
+        var ultimaRutaDibujada = null;
+        var tokenRutaActual = 0;
+        var rutasExpandidas = true;
+
+        var seccionRutas = document.getElementById('zona-rutas');
+        var elMapa = document.querySelector('.mapa');
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                uLat = pos.coords.latitude;
+                uLng = pos.coords.longitude;
+
+                marcadorUsuario = L.marker([uLat, uLng])
+                    .addTo(map)
+                    .bindPopup('Estás aquí');
+
+                map.setView([uLat, uLng], 14);
+
+                if (ultimaRutaDibujada) {
+                    dibujarRutaEnMapa(ultimaRutaDibujada);
+                }
+            }, function (err) {
+                console.warn('No se pudo obtener ubicación:', err.message);
+            });
+        }
+
+        // ============================================================
+        // TODAS LAS PARADAS
+        // ============================================================
+        function cargarTodasLasParadas() {
+            fetch('/Index?handler=TodasLasParadas')
+                .then(function (r) { return r.json(); })
+                .then(function (paradas) {
+                    capaTodasLasParadas.clearLayers();
+                    paradas.forEach(function (p) {
+                        L.circleMarker([p.latitud, p.longitud], {
+                            radius: 5,
+                            color: '#888',
+                            fillColor: '#bbb',
+                            fillOpacity: 0.8,
+                            weight: 1
+                        })
+                        .addTo(capaTodasLasParadas)
+                        .bindPopup(
+                            '<strong>' + escapeHtml(p.nombre) + '</strong><br>' +
+                            'Ruta: ' + escapeHtml(p.rutaNombre)
+                        );
+                    });
+                })
+                .catch(function (err) {
+                    console.error('Error al cargar todas las paradas:', err);
+                });
+        }
+        cargarTodasLasParadas();
+
+        // ============================================================
+        // COMPAÑÍAS Y NIVELES DE NAVEGACIÓN
+        // ============================================================
+        var listaCompanias = document.getElementById('lista-companias');
+        var tituloRutas = document.getElementById('titulo-rutas');
+
+        // Nivel 1: lista de compañías
+        document.querySelectorAll('#lista-companias .route-card').forEach(function (card) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function (e) {
+                e.preventDefault();
+                mostrarCompania(card.getAttribute('data-company'));
+            });
+        });
+
+        // Pasar de Nivel 1 → Nivel 2 (ver rutas de una compañía)
+        function mostrarCompania(company) {
+            listaCompanias.style.display = 'none';
+            document.querySelectorAll('.detalle-compania').forEach(function (d) {
+                d.style.display = 'none';
+            });
+            document.getElementById('detalle-' + company).style.display = 'block';
+
+            seccionRutas.classList.remove('colapsado');
+            elMapa.classList.remove('expandido');
+            rutasExpandidas = true;
+
+            tituloRutas.textContent = 'Regresar';
+            tituloRutas.style.cursor = 'pointer';
+            tituloRutas.onclick = regresarLista;
+        }
+
+        // Pasar de Nivel 2 → Nivel 1 (volver a las 4 compañías)
+        function regresarLista() {
+            listaCompanias.style.display = 'block';
+            document.querySelectorAll('.detalle-compania').forEach(function (d) {
+                d.style.display = 'none';
+            });
+            seccionRutas.classList.remove('colapsado');
+            elMapa.classList.remove('expandido');
+            rutasExpandidas = true;
+
+            tituloRutas.textContent = 'Rutas disponibles';
+            tituloRutas.style.cursor = 'default';
+            tituloRutas.onclick = null;
+
+            capaRutaActual.clearLayers();
+            ultimaRutaDibujada = null;
+            rutaActual = null;
+        }
+
+        // Pasar de Nivel 3 → Nivel 2, o de Nivel 2 → Nivel 1
+        function toggleRutas() {
+            // Nivel 3 → Nivel 2: expandir y mostrar rutas de la compañía actual
+            if (ultimaRutaDibujada) {
+                seccionRutas.classList.remove('colapsado');
+                elMapa.classList.remove('expandido');
+                rutasExpandidas = true;
+
+                capaRutaActual.clearLayers();
+                ultimaRutaDibujada = null;
+                rutaActual = null;
+
+                tituloRutas.textContent = 'Regresar';
+                tituloRutas.style.cursor = 'pointer';
+                tituloRutas.onclick = regresarLista;
+
+                setTimeout(function () {
+                    if (map) map.invalidateSize();
+                }, 450);
+                return;
+            }
+
+            // Nivel 2 → Nivel 1
+            regresarLista();
+        }
+
+        // ============================================================
+        // RESEÑAS
+        // ============================================================
+        var estrellasSeleccionadas = 0;
+        var zonaMapa = document.getElementById('zona-mapa');
+        var panelResenias = document.getElementById('panel-resenias');
+        var rutaTitulo = document.getElementById('ruta-actual-titulo');
+
+        // Click en la RUTA -> dibuja en el mapa y colapsa
+        document.querySelectorAll('.ruta-clickeable').forEach(function (card) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function () {
+                var ruta = card.getAttribute('data-ruta');
+                ultimaRutaDibujada = ruta;
+
+                panelResenias.style.display = 'none';
+                zonaMapa.style.display = 'block';
+                seccionRutas.style.display = 'block';
+
+                seccionRutas.classList.add('colapsado');
+                elMapa.classList.add('expandido');
+                rutasExpandidas = false;
+
+                tituloRutas.textContent = 'Regresar';
+                tituloRutas.style.cursor = 'pointer';
+                tituloRutas.onclick = toggleRutas;
+
+                setTimeout(function () {
+                    if (map) map.invalidateSize();
+                    dibujarRutaEnMapa(ruta);
+                }, 450);
+            });
+        });
+
+        // Click en BOTÓN COMENTARIOS -> abre panel de reseñas
+        document.querySelectorAll('.btn-comentarios').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var ruta = btn.getAttribute('data-ruta');
+                abrirResenias(ruta);
+            });
+        });
+
+        function abrirResenias(ruta) {
+            rutaActual = ruta;
+            ultimaRutaDibujada = ruta;
+            rutaTitulo.textContent = ruta;
+
+            zonaMapa.style.display = 'none';
+            seccionRutas.style.display = 'none';
+            panelResenias.style.display = 'block';
+
+            document.getElementById('form-comentario').style.display = 'none';
+            document.getElementById('input-usuario').value = '';
+            document.getElementById('input-mensaje').value = '';
+            document.querySelectorAll('#estrellas-selector span').forEach(function (s) {
+                s.classList.remove('activa');
+            });
+            estrellasSeleccionadas = 0;
+
+            cargarResenias(ruta);
+            dibujarRutaEnMapa(ruta);
+        }
+
+        document.getElementById('btn-volver-rutas').addEventListener('click', function () {
+            panelResenias.style.display = 'none';
+            zonaMapa.style.display = 'block';
+            seccionRutas.style.display = 'block';
+            rutaActual = null;
+
+            setTimeout(function () {
+                if (map) {
+                    map.invalidateSize();
+                    if (capaRutaActual.getLayers().length > 0) {
+                        var bounds = L.featureGroup(capaRutaActual.getLayers()).getBounds();
+                        map.fitBounds(bounds, { padding: [40, 40] });
+                    }
+                }
+            }, 150);
+        });
+
+        document.getElementById('btn-nuevo-comentario').addEventListener('click', function () {
+            document.getElementById('form-comentario').style.display = 'block';
+        });
+
+        document.getElementById('btn-cancelar').addEventListener('click', function () {
+            document.getElementById('form-comentario').style.display = 'none';
+            document.getElementById('form-error').style.display = 'none';
+        });
+
+        document.querySelectorAll('#estrellas-selector span').forEach(function (star) {
+            star.addEventListener('click', function () {
+                estrellasSeleccionadas = parseInt(star.getAttribute('data-val'));
+                document.querySelectorAll('#estrellas-selector span').forEach(function (s) {
+                    var val = parseInt(s.getAttribute('data-val'));
+                    if (val <= estrellasSeleccionadas) s.classList.add('activa');
+                    else s.classList.remove('activa');
+                });
+            });
+        });
+
+        function cargarResenias(ruta) {
+            fetch('/Index?handler=Resenias&ruta=' + encodeURIComponent(ruta))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    document.getElementById('promedio-numero').textContent = data.promedio.toFixed(1);
+                    document.getElementById('promedio-estrellas').textContent = estrellasVisuales(data.promedio);
+                    document.getElementById('promedio-total').textContent =
+                        data.total + ' reseña' + (data.total === 1 ? '' : 's');
+
+                    var lista = document.getElementById('lista-resenias');
+                    lista.innerHTML = '';
+
+                    if (data.resenias.length === 0) {
+                        lista.innerHTML = '<p class="sin-resenias">Aún no hay comentarios para esta ruta.</p>';
+                        return;
+                    }
+
+                    data.resenias.forEach(function (r) {
+                        var div = document.createElement('div');
+                        div.className = 'resenia-card';
+                        div.innerHTML =
+                            '<div class="resenia-header">' +
+                                '<strong>' + escapeHtml(r.usuario) + '</strong>' +
+                                '<span>' + estrellasVisuales(r.estrellas) + '</span>' +
+                            '</div>' +
+                            '<p>' + escapeHtml(r.mensaje) + '</p>';
+                        lista.appendChild(div);
+                    });
+                })
+                .catch(function (err) {
+                    console.error('Error al cargar reseñas:', err);
+                });
+        }
+
+        // ============================================================
+        // DIBUJAR RUTA (OSRM + waypoints + parada cercana + ruta amarilla)
+        // ============================================================
+        function dibujarRutaEnMapa(ruta) {
+            tokenRutaActual++;
+            var miToken = tokenRutaActual;
+
+            capaRutaActual.clearLayers();
+
+            fetch('/Index?handler=Paradas&ruta=' + encodeURIComponent(ruta))
+                .then(function (r) { return r.json(); })
+                .then(function (paradas) {
+                    if (miToken !== tokenRutaActual) return;
+                    if (paradas.length === 0) return;
+
+                    var paradasReales = paradas.filter(function (p) { return !p.esWaypoint; });
+                    var puntosOSRM = paradas.map(function (p) { return [p.latitud, p.longitud]; });
+
+                    paradasReales.forEach(function (p) {
+                        L.circleMarker([p.latitud, p.longitud], {
+                            radius: 8,
+                            color: '#12584f',
+                            fillColor: '#4CAF50',
+                            fillOpacity: 0.9,
+                            weight: 2
+                        })
+                        .addTo(capaRutaActual)
+                        .bindPopup(
+                            '<strong>' + p.orden + '. ' + escapeHtml(p.nombre) + '</strong><br>' +
+                            'Ruta: ' + escapeHtml(ruta)
+                        );
+                    });
+
+                    if (puntosOSRM.length >= 2) {
+                        var coords = puntosOSRM.map(function (p) {
+                            return p[1] + ',' + p[0];
+                        }).join(';');
+
+                        var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' +
+                                      coords +
+                                      '?overview=full&geometries=geojson';
+
+                        fetch(osrmUrl)
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                if (miToken !== tokenRutaActual) return;
+
+                                if (data.routes && data.routes.length > 0) {
+                                    L.geoJSON(data.routes[0].geometry, {
+                                        style: {
+                                            color: '#12584f',
+                                            weight: 5,
+                                            opacity: 0.85
+                                        }
+                                    }).addTo(capaRutaActual);
+                                } else {
+                                    L.polyline(puntosOSRM, {
+                                        color: '#12584f',
+                                        weight: 4,
+                                        opacity: 0.7,
+                                        dashArray: '10, 8'
+                                    }).addTo(capaRutaActual);
+                                }
+                                calcularParadaCercana(paradasReales, ruta, miToken);
+                            })
+                            .catch(function (err) {
+                                if (miToken !== tokenRutaActual) return;
+                                console.error('OSRM falló, usando línea recta:', err);
+                                L.polyline(puntosOSRM, {
+                                    color: '#12584f',
+                                    weight: 4,
+                                    opacity: 0.7,
+                                    dashArray: '10, 8'
+                                }).addTo(capaRutaActual);
+                                calcularParadaCercana(paradasReales, ruta, miToken);
+                            });
+                    } else {
+                        calcularParadaCercana(paradasReales, ruta, miToken);
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Error al cargar paradas:', err);
+                });
+        }
+
+        function calcularParadaCercana(paradasReales, ruta, miToken) {
+            if (miToken !== tokenRutaActual) return;
+            if (uLat === null || uLng === null || paradasReales.length === 0) {
+                ajustarZoom();
+                return;
+            }
+
+            var masCercana = null;
+            var menorDist = Infinity;
+
+            paradasReales.forEach(function (p) {
+                var d = distanciaKm(uLat, uLng, p.latitud, p.longitud);
+                if (d < menorDist) {
+                    menorDist = d;
+                    masCercana = p;
+                }
+            });
+
+            if (!masCercana) {
+                ajustarZoom();
+                return;
+            }
+
+            L.circleMarker([masCercana.latitud, masCercana.longitud], {
+                radius: 14,
+                color: '#e74c3c',
+                fillColor: '#e74c3c',
+                fillOpacity: 0.35,
+                weight: 3,
+                className: 'parada-cercana-pulse'
+            })
+            .addTo(capaRutaActual)
+            .bindPopup(
+                '<strong>Parada más cercana</strong><br>' +
+                escapeHtml(masCercana.nombre) + '<br>' +
+                'A ' + menorDist.toFixed(2) + ' km de ti'
+            )
+            .openPopup();
+
+            if (marcadorUsuario) {
+                var coordsUsuario = uLng + ',' + uLat + ';' +
+                                    masCercana.longitud + ',' + masCercana.latitud;
+
+                var osrmUsuarioUrl = 'https://router.project-osrm.org/route/v1/driving/' +
+                                     coordsUsuario +
+                                     '?overview=full&geometries=geojson';
+
+                fetch(osrmUsuarioUrl)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (miToken !== tokenRutaActual) return;
+
+                        if (data.routes && data.routes.length > 0) {
+                            L.geoJSON(data.routes[0].geometry, {
+                                style: {
+                                    color: '#FFC107',
+                                    weight: 5,
+                                    opacity: 0.9,
+                                    dashArray: '8, 6'
+                                }
+                            }).addTo(capaRutaActual);
+                        } else {
+                            L.polyline(
+                                [[uLat, uLng], [masCercana.latitud, masCercana.longitud]],
+                                {
+                                    color: '#FFC107',
+                                    weight: 4,
+                                    opacity: 0.8,
+                                    dashArray: '8, 6'
+                                }
+                            ).addTo(capaRutaActual);
+                        }
+                        ajustarZoom();
+                    })
+                    .catch(function (err) {
+                        if (miToken !== tokenRutaActual) return;
+                        console.error('OSRM usuario falló, usando línea recta:', err);
+                        L.polyline(
+                            [[uLat, uLng], [masCercana.latitud, masCercana.longitud]],
+                            {
+                                color: '#FFC107',
+                                weight: 4,
+                                opacity: 0.8,
+                                dashArray: '8, 6'
+                            }
+                        ).addTo(capaRutaActual);
+                        ajustarZoom();
+                    });
+            } else {
+                ajustarZoom();
+            }
+        }
+
+        function ajustarZoom() {
+            if (capaRutaActual.getLayers().length > 0) {
+                var bounds = L.featureGroup(capaRutaActual.getLayers()).getBounds();
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        function distanciaKm(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function estrellasVisuales(n) {
+            n = Math.round(n);
+            var s = '';
+            for (var i = 1; i <= 5; i++) s += (i <= n ? '★' : '☆');
+            return s;
+        }
+
+        function escapeHtml(txt) {
+            var div = document.createElement('div');
+            div.textContent = txt;
+            return div.innerHTML;
+        }
+
+        // Enviar reseña
+        document.getElementById('btn-enviar').addEventListener('click', function () {
+            var usuario = document.getElementById('input-usuario').value.trim() || 'Anonimo';
+            var mensaje = document.getElementById('input-mensaje').value.trim();
+            var errorDiv = document.getElementById('form-error');
+
+            if (!rutaActual) {
+                errorDiv.textContent = 'No se identificó la ruta.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (!mensaje) {
+                errorDiv.textContent = 'El mensaje no puede estar vacío.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (estrellasSeleccionadas < 1 || estrellasSeleccionadas > 5) {
+                errorDiv.textContent = 'Selecciona una puntuación de 1 a 5 estrellas.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+
+            var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            var token = tokenInput ? tokenInput.value : '';
+
+            fetch('/Index?handler=GuardarResenia', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    usuario: usuario,
+                    mensaje: mensaje,
+                    estrellas: estrellasSeleccionadas,
+                    rutaNombre: rutaActual
+                })
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    return r.text().then(function (t) {
+                        throw new Error('HTTP ' + r.status + ' - ' + t.substring(0, 200));
+                    });
+                }
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.ok) {
+                    document.getElementById('form-comentario').style.display = 'none';
+                    document.getElementById('input-usuario').value = '';
+                    document.getElementById('input-mensaje').value = '';
+                    document.querySelectorAll('#estrellas-selector span').forEach(function (s) {
+                        s.classList.remove('activa');
+                    });
+                    estrellasSeleccionadas = 0;
+                    cargarResenias(rutaActual);
+                } else {
+                    errorDiv.textContent = data.error || 'Error al guardar.';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(function (err) {
+                console.error('Error al enviar reseña:', err);
+                errorDiv.textContent = 'Error: ' + err.message;
+                errorDiv.style.display = 'block';
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

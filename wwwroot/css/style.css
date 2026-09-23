@@ -1,0 +1,595 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: #e9ecef;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 0;
+}
+
+
+/* ========================================
+   CELULAR
+======================================== */
+
+.phone {
+    width: 540px;
+    min-height: 900px;
+    background-color: white;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ========================================
+   ENCABEZADO
+======================================== */
+
+.header {
+    height: 80px;
+    width: 100%;
+    background-color: #12584f;
+    color: white;
+    flex-shrink: 0;
+}
+
+.header-content {
+    width: 100%;
+    max-width: 1100px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+    .logo i {
+        font-size: 28px;
+    }
+
+.menu-icon {
+    font-size: 35px;
+    cursor: pointer;
+}
+
+
+/* ========================================
+   CONTENIDO PRINCIPAL
+======================================== */
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ========================================
+   MAPA
+======================================== */
+
+.mapa {
+    height: 320px;
+    position: relative;
+    overflow: hidden;
+    background-color: #f4f1df;
+    flex-shrink: 0;
+    z-index: 1;
+    transition: height 0.4s ease;
+}
+
+    .mapa.expandido {
+        height: 720px;
+    }
+
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.leaflet-container {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+
+/* ========================================
+   BUSQUEDA
+======================================== */
+
+.search-box {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    height: 55px;
+    background-color: white;
+    border: none;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+    .search-box i {
+        font-size: 22px;
+        color: #777;
+        margin-right: 12px;
+    }
+
+    .search-box input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 16px;
+        background: transparent;
+    }
+
+        .search-box input::placeholder {
+            color: #999;
+        }
+
+
+/* ========================================
+   RUTAS
+======================================== */
+
+.routes {
+    background-color: white;
+    padding: 15px 15px 20px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    margin-top: -20px;
+    position: relative;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+    .routes.colapsado {
+        padding: 15px 15px 15px;
+    }
+
+        /* Cuando está colapsado: ocultar TODO excepto el título */
+        .routes.colapsado #lista-companias,
+        .routes.colapsado .detalle-compania {
+            display: none !important;
+        }
+
+.routes-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5px 12px;
+}
+
+.routes.colapsado .routes-title {
+    padding: 0 5px 0;
+}
+
+.routes-title div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #555;
+}
+
+.routes-title i {
+    color: #12584f;
+    font-size: 23px;
+}
+
+.routes-title strong {
+    font-size: 16px;
+}
+
+#titulo-rutas {
+    transition: color 0.2s;
+}
+
+    #titulo-rutas:hover {
+        color: #12584f;
+    }
+
+
+/* ========================================
+   TARJETAS DE RUTA
+======================================== */
+
+.route-card {
+    min-height: 65px;
+    background-color: #fafafa;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.15s;
+}
+
+    .route-card:hover {
+        background-color: #f0f0f0;
+    }
+
+    .route-card strong {
+        display: block;
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .route-card small {
+        display: block;
+        color: #777;
+        font-size: 12px;
+    }
+
+    .route-card a {
+        color: #12584f;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+.ruta-clickeable {
+    cursor: pointer;
+    flex: 1;
+}
+
+
+/* ========================================
+   BOTÓN DE COMENTARIOS
+======================================== */
+
+.btn-comentarios {
+    background-color: #e9f2f1;
+    color: #12584f;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: background-color 0.15s;
+}
+
+    .btn-comentarios:hover {
+        background-color: #cfe4e1;
+    }
+
+    .btn-comentarios i {
+        font-size: 14px;
+    }
+
+
+/* ========================================
+   BARRA INFERIOR
+======================================== */
+
+.bottom-nav {
+    height: 65px;
+    background-color: white;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #111;
+    font-size: 11px;
+    width: 80px;
+    cursor: pointer;
+}
+
+    .nav-item i {
+        font-size: 23px;
+        margin-bottom: 2px;
+    }
+
+    .nav-item.active {
+        color: #12584f;
+        font-weight: bold;
+    }
+
+
+/* ========================================
+   PANEL DE RESEÑAS
+======================================== */
+
+.resenias {
+    background-color: white;
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+}
+
+.resenias-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-volver {
+    background: none;
+    border: none;
+    color: #12584f;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 10px;
+}
+
+    .btn-volver:hover {
+        background-color: #e9f2f1;
+    }
+
+.resenias-header strong {
+    color: #12584f;
+    font-size: 18px;
+}
+
+.resenias-promedio {
+    text-align: center;
+    padding: 20px 10px;
+    background-color: #fafafa;
+    border-radius: 20px;
+}
+
+.promedio-numero {
+    font-size: 48px;
+    font-weight: bold;
+    color: #12584f;
+    line-height: 1;
+}
+
+.promedio-estrellas {
+    color: #f1c40f;
+    font-size: 24px;
+    margin: 8px 0;
+}
+
+.promedio-total {
+    color: #777;
+    font-size: 13px;
+}
+
+.btn-nuevo-comentario {
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 15px;
+    background-color: #12584f;
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+    .btn-nuevo-comentario:hover {
+        background-color: #0e463f;
+    }
+
+    .btn-nuevo-comentario i {
+        font-size: 18px;
+    }
+
+.form-comentario {
+    background-color: #fafafa;
+    padding: 18px;
+    border-radius: 15px;
+}
+
+    .form-comentario label {
+        display: block;
+        font-size: 13px;
+        color: #555;
+        margin: 10px 0 5px;
+        font-weight: bold;
+    }
+
+        .form-comentario label:first-of-type {
+            margin-top: 0;
+        }
+
+    .form-comentario input,
+    .form-comentario textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+        outline: none;
+    }
+
+        .form-comentario input:focus,
+        .form-comentario textarea:focus {
+            border-color: #12584f;
+        }
+
+    .form-comentario textarea {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+.estrellas-selector {
+    font-size: 32px;
+    color: #ccc;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+    padding: 5px 0;
+    letter-spacing: 4px;
+}
+
+    .estrellas-selector span {
+        transition: color 0.15s;
+    }
+
+        .estrellas-selector span.activa {
+            color: #f1c40f;
+        }
+
+.form-botones {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-cancelar,
+.btn-enviar {
+    flex: 1;
+    height: 45px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-cancelar {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+    .btn-cancelar:hover {
+        background-color: #d0d0d0;
+    }
+
+.btn-enviar {
+    background-color: #12584f;
+    color: white;
+}
+
+    .btn-enviar:hover {
+        background-color: #0e463f;
+    }
+
+.form-error {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background-color: #fde8e8;
+    color: #c0392b;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.lista-resenias {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.resenia-card {
+    background-color: #fafafa;
+    border-radius: 15px;
+    padding: 14px 16px;
+}
+
+.resenia-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+    .resenia-header strong {
+        color: #12584f;
+        font-size: 14px;
+    }
+
+    .resenia-header span {
+        color: #f1c40f;
+        font-size: 14px;
+    }
+
+.resenia-card p {
+    margin: 0;
+    color: #333;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.sin-resenias {
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+    padding: 30px 20px;
+}
+
+
+/* ========================================
+   ANIMACIÓN PARADA CERCANA
+======================================== */
+
+@keyframes pulse-parada {
+    0% {
+        stroke-opacity: 1;
+        stroke-width: 3;
+    }
+
+    50% {
+        stroke-opacity: 0.3;
+        stroke-width: 8;
+    }
+
+    100% {
+        stroke-opacity: 1;
+        stroke-width: 3;
+    }
+}
+
+.parada-cercana-pulse {
+    animation: pulse-parada 1.8s infinite;
+}
